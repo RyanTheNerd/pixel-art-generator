@@ -1,0 +1,242 @@
+class PixelArtGUI extends React.Component {
+   constructor(props) {
+      super();
+      this.state = {
+         originalImageSrc: "",
+         pixelArtSrc: "",
+         previewImageSrc: "",
+      };
+      this.placeholderImage = {
+         width: 0,
+         height: 0,
+         src: "",
+      }
+      this.pixelArt = this.previewImage = this.placeholderImage;
+      //this.pixelArt = new Image();
+      //this.pixelArt.onload = () => {this.genPreviewImage()};
+      //this.pixelArt.onload.bind(this);
+      //this.pixelArt.src = document.querySelector("demoimg");
+      this.colorDepth = "8-bit";
+      this.fileInput = React.createRef();
+      this.uploadHandler = this.uploadHandler.bind(this);
+   }
+   uploadHandler() {
+      let file = this.fileInput.current.files[0];
+      let reader = new FileReader();
+      
+      reader.onloadend = () => {
+         this.originalImage = new Image();
+         
+         this.originalImage.onload = () => {
+            this.genPixelArt();
+         };
+         this.originalImage.onload.bind(this);
+         this.originalImage.src = reader.result;
+      }
+         
+      if(file) {
+         reader.readAsDataURL(file);
+      }
+      else {
+         this.originalImage.src = "";
+      }
+   }
+   colorDepthHandler(event) {
+      console.log(event.target.value);
+      this.colorDepth = event.target.value; 
+      this.genPixelArt();
+   }
+   genPixelArt() {
+      let canvas = scaledCanvas(this.originalImage, 64);
+      setColorDepth(canvas, this.colorDepth);
+      
+      this.pixelArt = new Image();
+      this.pixelArt.onload = () => {
+        this.genPreviewImage(); 
+      };
+      this.pixelArt.onload.bind(this);
+      this.pixelArt.src = canvas.toDataURL();
+   }
+   genPreviewImage() {
+      let canvas = scaledCanvas(this.pixelArt, 512);
+      
+      this.previewImage = new Image();
+      this.previewImage.onload = () => {
+         this.setState({
+            originalImageSrc: this.originalImage.src,
+            pixelArtSrc: this.pixelArt.src,
+            previewImageSrc: this.previewImage.src,
+         });
+      }
+      
+      this.previewImage.src = canvas.toDataURL();
+      
+   }
+   render() {
+      return (
+      <div className="container-fluid text-white">
+         <div className="row">
+            <div className="col-sm">
+               <PAPreview 
+                  src={this.state.previewImageSrc} 
+                  width={this.previewImage.width} 
+                  height={this.previewImage.height}
+               />
+            </div>
+            <div className="col-sm-6 col-md-5 col-xl-3">
+               <PAControlPanel 
+                  handleChange={(event) => {this.colorDepthHandler(event)}}
+                  pixelArtSrc={this.state.pixelArtSrc}
+                  previewImageSrc={this.state.previewImageSrc}
+                  uploadHandler={this.uploadHandler}
+                  fileInput={this.fileInput}
+               />
+            </div>
+         </div>
+      </div>
+      );
+   }
+}
+
+function PAPreview(props) {
+   return (
+      <img
+         className = "PAPreview img-thumbnail"
+         src = {props.src} 
+         width = {props.width}
+         height = {props.height}
+      />
+   );
+}
+
+function PAControlPanel(props) {
+   return (
+     <div className="PAControlPanel card-body">
+         <h2>Control Panel</h2>
+         <PAImgInput
+            uploadHandler={props.uploadHandler}
+            fileInput={props.fileInput}
+         />
+         <h4>Color Depth</h4>
+         <div 
+            onChange={props.handleChange} 
+            className="btn-group btn-group-toggle col-12" 
+            dataToggle="buttons"
+         >
+            <PARadio
+               id = "8-bit"
+               name = "colordepth"
+               value = "8-bit"
+            />
+            <PARadio
+               id = "16-bit"
+               name = "colordepth"
+               value = "16-bit"
+            />
+            <PARadio
+               id = "24-bit"
+               name = "colordepth"
+               value = "24-bit"
+            />
+         </div>
+         <h4>Downloads</h4>
+         <div className="btn-group col-12">
+            <PADlBtn
+               fileName = "pixelArt" 
+               text = "Download pixel art" 
+               src = {props.pixelArtSrc} 
+            />
+            <PADlBtn
+               fileName = "previewImage"
+               text = "Download scaled view"
+               src = {props.previewImageSrc}
+            />
+         </div>
+      </div>
+   );
+}
+
+function PARadio(props) {
+   return (
+     <label class="btn btn-primary">
+         <input 
+            type = "radio"
+            name = {props.name}
+            id = {props.id}
+            value = {props.value}
+         /> {props.value}
+     </label>
+   );
+}
+
+function PADlBtn(props) {
+   return (
+      <a class="btn btn-success" 
+         download={props.fileName}
+         href={props.src} 
+         role="button">
+         {props.text}</a>
+   );
+}
+
+function PAImgInput(props) {
+   return (
+     <div className="custom-file">
+        <input 
+            type="file" 
+            style={{display: "none"}}
+            onChange={props.uploadHandler}
+            ref={props.fileInput}
+            id="fileInput"
+            className="custom-file-input"
+        />
+        <label className="custom-file-label" for="fileInput">Select Image</label>
+     </div>
+   );
+}
+
+function scaledCanvas(image, outputWidth, smooth = false) {
+   // Converts image to a canvas scaled to outputWidth
+   // Returns scaled canvas
+   let canvas = document.createElement('canvas');
+   let width = outputWidth;
+   let height = width * image.height / image.width;
+   canvas.width = width;
+   canvas.height = height;
+
+   let ctx = canvas.getContext('2d');
+   ctx.imageSmoothingEnabled = smooth;
+   ctx.drawImage(image, 0, 0, width, height);
+   return canvas; 
+}
+
+function setColorDepth(canvas, depth) {
+   if(depth == '24-bit') return;
+   let ctx = canvas.getContext('2d');
+   let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+   let data = imgData.data;
+   
+   const depths = {
+      '8-bit': [3, 3, 2],
+      '16-bit': [5, 6, 5],
+   };
+   
+   let d = depths[depth];
+   for(let i = 0; i < data.length; i += 4) {
+      data[i]     = nearest(data[i],     d[0]);
+      data[i + 1] = nearest(data[i + 1], d[1]);
+      data[i + 2] = nearest(data[i + 2], d[2]);
+   }
+   ctx.putImageData(imgData, 0, 0);
+}
+function nearest(x, a) { // will round down to nearest of a possibilities
+                         // in the range 0 <= x <= 255
+    return Math.floor(x / (255 / a)) * (255 / a);
+}
+
+
+ReactDOM.render(
+   <PixelArtGUI />,
+   document.querySelector("#root")
+);
+

@@ -1,0 +1,12 @@
+body {
+   background-color: #212121;
+   font-family: sans-serif;
+   margin-top: 20px;
+}
+.PAPreview {
+   display: block;
+   margin: 0 auto;
+}
+.PAControlPanel {
+   background-color: #3a3a3a;
+}
