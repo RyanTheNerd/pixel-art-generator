@@ -1,8 +1,8 @@
-#Pixel Art Generator
+# Pixel Art Generator
 A pixel art generator I built to get more experience using node and bootstrap
 
 ## Live demo:
-[Click Here]("https://haggleforth.com/pixel-art-generator")
+[Click Here](https://haggleforth.com/pixel-art-generator)
 
 ## Running locally:
 Simply clone the repository using 
